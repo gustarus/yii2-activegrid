@@ -7,11 +7,12 @@
 
 namespace gustarus\activegrid\columns;
 
+use gustarus\activegrid\columns\ActiveColumn;
 use yii\helpers\Html;
 
 /**
  * Class ActiveCheckboxColumn
- * @package webulla\activegrid\columns
+ * @package gustarus\activegrid\columns
  */
 class ActiveCheckboxColumn extends ActiveColumn {
 

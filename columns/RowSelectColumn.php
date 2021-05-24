@@ -8,6 +8,7 @@
 
 namespace gustarus\activegrid\columns;
 
+use Yii;
 use yii\grid\CheckboxColumn;
 use yii\helpers\Html;
 
@@ -27,7 +28,7 @@ class RowSelectColumn extends CheckboxColumn {
    * @inheritdoc
    */
   public function renderHeaderCellContent() {
-    $this->grid->view->registerJs('$("#' . $this->grid->id . '").ActiveGrid("getModel").setSelectionColumn("row-select");');
+    $this->grid->view->registerJs('$("#' . $this->grid->id . '").activeGrid("getModel").setSelectionColumn("row-select");');
 
     return Html::checkbox('row-select', false, $this->checkboxOptions);
   }

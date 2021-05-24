@@ -7,6 +7,10 @@
 
 namespace gustarus\activegrid\columns;
 
+use gustarus\activegrid\widgets\ActiveGrid;
+use gustarus\activegrid\columns\ActiveColumn;
+use yii\helpers\Html;
+
 /**
  * Class ActiveInputColumn
  * @package gustarus\activegrid\columns
@@ -23,7 +27,7 @@ class ActiveInputColumn extends ActiveColumn {
   /**
    * @inheritdoc
    */
-  protected function renderDataCellContentField($field) {
-    return $field->input($this->fieldType, $this->fieldOptions);
+  protected function renderDataCellContentField($field, $fieldOptions, $key, $index) {
+    return $field->input($this->fieldType, $fieldOptions);
   }
 }

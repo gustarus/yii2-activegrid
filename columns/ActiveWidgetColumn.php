@@ -23,7 +23,7 @@ class ActiveWidgetColumn extends ActiveColumn {
   /**
    * @inheritdoc
    */
-  protected function renderDataCellContentField($field) {
-    return $field->widget($this->widgetConfig['class'], $this->widgetConfig);
+  protected function renderDataCellContentField($field, $fieldOptions, $key, $index) {
+    return $field->widget($this->widgetConfig);
   }
 }

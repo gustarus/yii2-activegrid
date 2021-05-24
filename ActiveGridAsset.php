@@ -6,7 +6,7 @@
  * Time: 20:56
  */
 
-namespace gustarus\activegrid\assets;
+namespace gustarus\activegrid;
 
 use yii\web\AssetBundle;
 
@@ -21,14 +21,14 @@ class ActiveGridAsset extends AssetBundle {
    * @inheritdoc
    */
   public $js = [
-    'js/ActiveGrid.js',
+    'jquery.activeGrid.js',
   ];
 
   /**
    * @inheritdoc
    */
   public $css = [
-    'css/grid.css',
+    'style.css',
   ];
 
   /**

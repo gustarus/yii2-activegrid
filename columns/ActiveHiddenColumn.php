@@ -8,6 +8,7 @@
 
 namespace gustarus\activegrid\columns;
 
+use gustarus\activegrid\columns\ActiveColumn;
 use yii\helpers\Html;
 
 class ActiveHiddenColumn extends ActiveColumn {

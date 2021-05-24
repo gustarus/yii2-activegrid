@@ -1,0 +1,30 @@
+.table-activegrid > tbody > tr[data-selected] {
+    background: #d9edf7;
+}
+
+.table-activegrid.table-striped > tbody > tr[data-selected]:nth-child(2n+1) > td {
+    background: inherit;
+}
+
+.table-activegrid > thead > tr > th > input.row-select {
+    height: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.table-activegrid > tbody > tr > td > .form-group {
+    margin: 0;
+}
+
+.table-activegrid > tbody > tr > td > .form-group > .help-block {
+    display: none;
+    margin-bottom: 0;
+}
+
+.table-activegrid > tbody > tr > td > .form-group.has-error > .help-block {
+    display: block;
+}
+
+.table-activegrid > tbody > tr > td input.row-select {
+    margin: 0;
+}

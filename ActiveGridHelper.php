@@ -1,6 +1,6 @@
 <?php
 
-namespace gustarus\activegrid\helpers;
+namespace gustarus\activegrid;
 
 use yii\helpers\ArrayHelper;
 

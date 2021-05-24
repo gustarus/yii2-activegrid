@@ -9,7 +9,7 @@
 namespace gustarus\activegrid;
 
 use Yii;
-use gustarus\activegrid\assets\ActiveGridAsset;
+use gustarus\activegrid\data\UnlimitedArrayDataProvider;
 use gustarus\activegrid\columns\ActiveHiddenColumn;
 use gustarus\activegrid\columns\RowSelectColumn;
 use gustarus\activegrid\columns\ActiveInputColumn;
@@ -21,241 +21,319 @@ use yii\widgets\ActiveForm;
 
 class ActiveGrid extends GridView {
 
-	/**
-	 * Прототип модели.
-	 * @var ActiveRecord
-	 */
-	public $model;
+  const TEMPLATE_KEY = '#key#';
+  const TEMPLATE_INDEX = '#index#';
 
-	/**
-	 * Модель формы.
-	 * @var ActiveForm
-	 */
-	public $form;
+  private static $indexes = [];
 
-	/**
-	 * Список моделей для провайдера.
-	 * @var
-	 */
-	public $models;
+  /**
+   * Родительская модель для связей которой строится виджет.
+   * @var ActiveRecord
+   */
+  public $model;
 
-	/**
-	 * @inheritdoc
-	 */
-	public $dataColumnClass;
+  /**
+   * Экземпляр из списка @property $relations.
+   * Под эту модель отведено отдельное свойство потому что @property $relations может быть пустым (ниодной связанной модели).
+   * @var ActiveRecord
+   */
+  public $relation;
 
+  /**
+   * Список моделей для провайдера.
+   * @var ActiveRecord[]
+   */
+  public $relations;
 
-	/**
-	 * Возможность добавления записей.
-	 * @var bool
-	 */
-	public $allowAdd = true;
+  /**
+   * Модель формы.
+   * @var ActiveForm
+   */
+  public $form;
 
-	/**
-	 * Возможность удаления записей.
-	 * @var bool
-	 */
-	public $allowDelete = true;
-
-
-	/**
-	 * Вывести скрытую колонку с id моделей.
-	 * @var bool
-	 */
-	public $enablePrimaryColumn = true;
-
-	/**
-	 * Вывести колонку с выбором строчек.
-	 * @var bool
-	 */
-	public $enableSelectColumn = true;
-
-
-	/**
-	 * @inheritdoc
-	 */
-	public $tableOptions = ['class' => 'table table-bordered table-active_grid'];
-
-	/**
-	 * @inheritdoc
-	 */
-	public $layout = "{items}\n{buttons}";
-
-	/**
-	 * @inheritdoc
-	 */
-	public $emptyText = 'It Is Found Nothing';
-
-	/**
-	 * @inheritdoc
-	 */
-	public $emptyTextOptions = ['class' => 'text-center'];
-
-
-	/**
-	 * Шаблон кнопок.
-	 * @var string
-	 */
-	public $buttonsTemplate = '{add}&nbsp;{delete}';
-
-	/**
-	 * Опции отображенгия кнопок.
-	 * @var array
-	 */
-	public $buttonsOptions = ['class' => 'clearfix text-center'];
-
-	/**
-	 * Прототип кнопки.
-	 * @var array
-	 */
-	public $button = [
-		'tag' => 'a',
-		'content' => 'Link',
-		'options' => []
-	];
-
-	/**
-	 * Коллекция кнопок.
-	 * @var array
-	 */
-	public $buttons = [
-		'add' => [
-			'tag' => 'a',
-			'content' => 'Add',
-			'options' => [
-				'class' => 'btn btn-success',
-				'onClick' => 'return false;',
-			]
-		],
-
-		'delete' => [
-			'tag' => 'a',
-			'content' => 'Delete',
-			'options' => [
-				'class' => 'btn btn-danger',
-			]
-		]
-	];
+  /**
+   * @inheritdoc
+   */
+  public $dataColumnClass = 'gustarus\activegrid\columns\ActiveInputColumn';
 
 
   /**
+   * Возможность добавления записей.
+   * @var bool
+   */
+  public $allowAdd = true;
+
+  /**
+   * Возможность удаления записей.
+   * @var bool
+   */
+  public $allowDelete = true;
+
+
+  /**
+   * Вывести скрытую колонку с id моделей.
+   * @var bool
+   */
+  public $enablePrimaryColumn = true;
+
+  /**
+   * Вывести колонку с выбором строчек.
+   * @var bool
+   */
+  public $enableSelectColumn = true;
+
+
+  /**
+   * @inheritdoc
+   */
+  public $options = [
+    'class' => 'form-group',
+  ];
+
+  /**
+   * @inheritdoc
+   */
+  public $tableOptions = ['class' => 'table table-bordered table-striped table-activegrid'];
+
+  /**
+   * @inheritdoc
+   */
+  public $layout = "{items}\n{buttons}";
+
+  /**
+   * @inheritdoc
+   */
+  public $emptyText = 'It Is Found Nothing';
+
+  /**
+   * @inheritdoc
+   */
+  public $emptyTextOptions = ['class' => 'text-center'];
+
+
+  /**
+   * Шаблон кнопок.
+   * @var string
+   */
+  public $buttonsTemplate = '{add}&nbsp;{delete}';
+
+  /**
+   * Опции отображенгия кнопок.
+   * @var array
+   */
+  public $buttonsOptions = ['class' => 'clearfix text-center'];
+
+  /**
+   * Прототип кнопки.
+   * @var array
+   */
+  public $button = [
+    'tag' => 'a',
+    'content' => 'Link',
+    'options' => []
+  ];
+
+  /**
+   * Коллекция кнопок.
+   * @var array
+   */
+  public $buttons = [
+    'add' => [
+      'tag' => 'a',
+      'content' => 'Add new',
+      'options' => [
+        'class' => 'btn btn-success btn-sm',
+        'href' => '#',
+      ]
+    ],
+
+    'delete' => [
+      'tag' => 'a',
+      'content' => 'Delete selected',
+      'options' => [
+        'data-active-on-select' => true,
+        'class' => 'btn btn-danger btn-sm',
+        'href' => '#',
+      ]
+    ]
+  ];
+
+  /**
+   * Коллекция кнопок которая будет добавлена к основным кнопкам.
+   * @var array
+   */
+  public $extraButtons = [];
+
+  /**
+   * @inheritdoc
    * @throws \yii\base\InvalidConfigException
    */
-	public function init() {
-		if(!$this->dataColumnClass) {
-			$this->dataColumnClass = ActiveInputColumn::className();
-		}
+  public function init() {
+    // сливаем две коллекции кнопок
+    $this->buttons = array_merge($this->buttons, $this->extraButtons);
 
-		// инициализация моделей
-		if(is_array($this->models)) {
-			$this->dataProvider = new ArrayDataProvider(['allModels' => $this->models]);
-		}
+    // инициализация моделей
+    if (is_array($this->relations)) {
+      $this->dataProvider = new UnlimitedArrayDataProvider([
+        'allModels' => $this->relations,
+        'pagination' => false,
+      ]);
+    }
 
-		// добавляем скрытую колонку с id
-		if($this->enablePrimaryColumn) {
-			foreach($this->model->primaryKey() as $key) {
-				$this->columns[] = [
-					'class' => ActiveHiddenColumn::className(),
-					'attribute' => $key
-				];
-			}
-		}
+    // добавляем скрытую колонку с id
+    if ($this->enablePrimaryColumn) {
+      foreach ($this->relation->primaryKey() as $key) {
+        $this->columns[] = [
+          'class' => ActiveHiddenColumn::className(),
+          'attribute' => $key
+        ];
+      }
+    }
 
-		// добавляем колонку с чекбоксами
-		if($this->enableSelectColumn) {
-			$this->columns[] = [
-				'class' => RowSelectColumn::className(),
-			];
-		}
+    // добавляем колонку с чекбоксами
+    if ($this->enableSelectColumn) {
+      $this->columns[] = [
+        'class' => RowSelectColumn::className(),
+      ];
+    }
 
-		// инициализация кнопок
-		if($this->buttons) {
-			foreach($this->buttons as $name => &$button) {
-				$button['options'] = array_merge($button['options'], [
-					'id' => 'btn-' . $this->id . '-' . $name,
-					'href' => '#',
-					'onClick' => 'return false;',
-					'content' => Yii::t('app', $button['content']),
-				]);
-			}
-		}
+    // инициализация кнопок
+    if ($this->buttons) {
+      foreach ($this->buttons as $name => &$button) {
+        // id кнопки
+        $button['options']['id'] = 'btn-' . $this->id . '-' . $name;
 
-		parent::init();
-	}
+        // перевод кнопки
+        if (is_string($button['content'])) {
+          $button['content'] = Yii::t('app', $button['content']);
+        }
+      }
+    }
 
-	/**
-	 * @inheritdoc
-	 */
-	public function run() {
-		$id = $this->options['id'];
+    parent::init();
+  }
 
-		ActiveGridAsset::register($this->getView());
+  /**
+   * @inheritdoc
+   * @throws \yii\base\InvalidConfigException
+   */
+  public function run() {
+    $id = $this->options['id'];
 
-		$options = [
-			'emptyText' => Yii::t('app', $this->emptyText),
-			'emptyTextOptions' => $this->emptyTextOptions,
-			'rowTemplate' => $this->renderTableRowTemplate(),
-		];
+    ActiveGridAsset::register($this->getView());
 
-		$script = 'var $grid = $("#' . $id . '").ActiveGrid(' . json_encode($options) . ');';
-		$this->allowAdd && $script .= '$grid.ActiveGrid("bindAddButton", "#' . $this->buttons['add']['options']['id'] . '");';
-		$this->allowDelete && $script .= '$grid.ActiveGrid("bindDeleteButton", "#' . $this->buttons['delete']['options']['id'] . '");';
+    $options = [
+      'relationFormName' => $this->relation->formName(),
+      'emptyText' => Yii::t('app', $this->emptyText),
+      'emptyTextOptions' => $this->emptyTextOptions,
+      'rowTemplate' => $this->renderTableRowTemplate(),
+    ];
 
-		$this->getView()->registerJs('(function(){' . $script . '})();');
+    $script = 'var $grid = $("#' . $id . '").activeGrid(' . json_encode($options) . ');';
 
-		parent::run();
-	}
+    // bind controls
+    // we have two general controls
+    // and there could be additional controls
+    foreach ($this->buttons as $name => $button) {
+      $bind = true;
+      switch ($name) {
+        case 'add':
+          $bind = $this->allowAdd;
+          break;
+
+        case 'delete':
+          $bind = $this->allowDelete;
+          break;
+      }
+
+      if ($bind) {
+        $script .= '$grid.activeGrid("bindControl", "#' . $button['options']['id'] . '", "' . $name . '");';
+      }
+    }
+
+    $this->getView()->registerJs('(function(){' . $script . '})();');
+
+    parent::run();
+  }
 
 
-	/**
-	 * @inheritdoc
-	 */
-	public function renderSection($name) {
-		switch($name) {
-			case '{items}':
-				return $this->renderItems();
-			case '{buttons}':
-				return $this->renderButtons();
-			default:
-				return false;
-		}
-	}
+  /**
+   * @inheritdoc
+   */
+  public function renderSection($name) {
+    switch ($name) {
+      case '{items}':
+        return $this->renderItems();
+      case '{buttons}':
+        return $this->renderButtons();
+      default:
+        return false;
+    }
+  }
 
-	/**
-	 * @inheritdoc
-	 */
-	public function renderTableBody() {
-		$models = array_values($this->dataProvider->getModels());
-		$keys = $this->dataProvider->getKeys();
-		$rows = [];
+  /**
+   * @inheritdoc
+   * @throws \yii\base\NotSupportedException
+   */
+  public function renderTableBody() {
+    /** @var \gustarus\activerecord\ActiveRecord $relation */
+    $relation = $this->relation;
 
-		foreach($models as $index => $model) {
-			$key = $keys[$index];
-			$rows[] = $this->renderTableRow($model, $key, $index);
-		}
+    /** @var \gustarus\activerecord\ActiveRecord[] $models */
+    $models = array_values($this->dataProvider->getModels());
+    $keys = $this->dataProvider->getKeys();
+    $rows = [];
 
-		return "<tbody>\n" . implode("\n", $rows) . "\n</tbody>";
-	}
+    $relationFormName = $this->relation->formName();
+    if (!isset(self::$indexes[$relationFormName])) {
+      self::$indexes[$relationFormName] = 0;
+    }
 
-	/**
-	 * Рендер шаблона строки таблицы.
-	 * @return string
-	 */
-	public function renderTableRowTemplate() {
-		return $this->renderTableRow($this->model, '#key#', '#index#');
-	}
+    foreach ($models as $index => $model) {
+      $modelClassName = $model::className();
+      $relationClassName = $relation::className();
+      if ($modelClassName !== $relationClassName) {
+        $msg = "Model #$model->primaryKey from table data has a class distinct from class on \$this->relation model. Model and \$this->relation should be the same classes.\n\nModel class: $modelClassName\nRelation class: $relationClassName";
+        throw new \yii\base\NotSupportedException($msg);
+      }
 
-	/**
-	 * Выполняет компиляцию кнопок.
-	 * @return string
-	 */
-	public function renderButtons() {
-		$buttons = [];
-		foreach($this->buttons as $name => $button) {
-			$button = array_merge($this->button, $button);
-			$buttons['{' . $name . '}'] = Html::tag($button['tag'], $button['content'], $button['options']);
-		}
+      $key = $keys[$index];
+      $globalIndex = self::$indexes[$relationFormName];
+      self::$indexes[$relationFormName]++;
+      $rows[] = $this->renderTableRow($model, $key, $globalIndex);
+    }
 
-		return Html::tag('div', strtr($this->buttonsTemplate, $buttons), $this->buttonsOptions);
-	}
+    $latestIndex = self::$indexes[$relationFormName];
+    $script = "$.fn.activeGrid('setLatestIndex', '$relationFormName', $latestIndex);";
+    $this->getView()->registerJs('(function(){' . $script . '})();');
+
+    return "<tbody>\n" . implode("\n", $rows) . "\n</tbody>";
+  }
+
+  /**
+   * Рендер шаблона строки таблицы.
+   * @return string
+   */
+  public function renderTableRowTemplate() {
+    return $this->renderTableRow($this->relation, self::TEMPLATE_KEY, self::TEMPLATE_INDEX);
+  }
+
+  /**
+   * Выполняет компиляцию кнопок.
+   * @return string
+   */
+  public function renderButtons() {
+    $buttons = [];
+    foreach ($this->buttons as $name => $button) {
+      if ($name != 'add' && $name != 'delete'
+        || $name == 'add' && $this->allowAdd
+        || $name == 'delete' && $this->allowDelete
+      ) {
+        $button = array_merge($this->button, $button);
+        $buttons['{' . $name . '}'] = Html::tag($button['tag'], $button['content'], $button['options']);
+      }
+    }
+
+    return $buttons ? Html::tag('div', strtr($this->buttonsTemplate, $buttons), $this->buttonsOptions) : '';
+  }
 }

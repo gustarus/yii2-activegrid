@@ -9,10 +9,11 @@ namespace gustarus\activegrid\columns;
 
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
+use gustarus\activegrid\widgets\ActiveGrid;
 
 /**
  * Class ActiveControlColumn
- * @package webulla\activegrid\columns
+ * @package gustarus\activegrid\columns
  */
 class ActiveControlColumn extends ActiveColumn {
 
